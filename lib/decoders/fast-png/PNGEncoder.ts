@@ -1,21 +1,20 @@
-import { IOBuffer } from './iobuffer/IOBuffer.ts';
-import { deflate } from './pako/index.js';
-
-import { pngSignature, crc } from './common.ts';
-import {
-  DeflateFunctionOptions,
-  IPNGEncoderOptions,
-  IImageData,
-  IDecodedPNG,
-  PNGDataArray,
-  BitDepth,
-} from './types.ts';
+import { crc, pngSignature } from "./common.ts";
 import {
   ColorType,
   CompressionMethod,
   FilterMethod,
   InterlaceMethod,
-} from './internalTypes.ts';
+} from "./internalTypes.ts";
+import { IOBuffer } from "./iobuffer/IOBuffer.ts";
+import { deflate } from "./pako/index.js";
+import {
+  BitDepth,
+  DeflateFunctionOptions,
+  IDecodedPNG,
+  IImageData,
+  IPNGEncoderOptions,
+  PNGDataArray,
+} from "./types.ts";
 
 const defaultZlibOptions: DeflateFunctionOptions = {
   level: 3,
@@ -51,7 +50,7 @@ export default class PNGEncoder extends IOBuffer {
   private encodeIHDR(): void {
     this.writeUint32(13);
 
-    this.writeChars('IHDR');
+    this.writeChars("IHDR");
 
     this.writeUint32(this._png.width);
     this.writeUint32(this._png.height);
@@ -68,7 +67,7 @@ export default class PNGEncoder extends IOBuffer {
   private encodeIEND(): void {
     this.writeUint32(0);
 
-    this.writeChars('IEND');
+    this.writeChars("IEND");
 
     this.writeCrc(4);
   }
@@ -77,7 +76,7 @@ export default class PNGEncoder extends IOBuffer {
   private encodeIDAT(data: PNGDataArray): void {
     this.writeUint32(data.length);
 
-    this.writeChars('IDAT');
+    this.writeChars("IDAT");
 
     this.writeBytes(data);
 
@@ -97,19 +96,21 @@ export default class PNGEncoder extends IOBuffer {
       } else if (depth === 16) {
         offset = writeDataUint16(data, newData, slotsPerLine, offset);
       } else {
-        throw new Error('unreachable');
+        throw new Error("unreachable");
       }
     }
     const buffer = newData.toArray();
     const compressed = deflate(buffer, this._zlibOptions);
-    this.encodeIDAT(compressed);
+    if (compressed && typeof compressed !== "string") {
+      this.encodeIDAT(compressed);
+    }
   }
 
   private _checkData(data: IImageData): IDecodedPNG {
     const { colorType, channels, depth } = getColorType(data);
     const png: IDecodedPNG = {
-      width: checkInteger(data.width, 'width'),
-      height: checkInteger(data.height, 'height'),
+      width: checkInteger(data.width, "width"),
+      height: checkInteger(data.height, "height"),
       channels: channels,
       data: data.data,
       depth: depth,
